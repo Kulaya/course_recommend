@@ -63,12 +63,8 @@ def main():
 
     grades, field_of_interest = get_user_input()
 
-    st.write("Predicting the field of interest based on your grades...")
-    predicted_field = predict_field(grades)
-    st.write("Predicted field of interest:", predicted_field)
-
     st.write("Determining the recommended course...")
-    recommended_course = get_recommended_course(predicted_field)
+    recommended_course = get_recommended_course(field_of_interest)
     
     if recommended_course != "Unknown":
         st.success(f"Based on your grades and field of interest, the recommended course is: {recommended_course}")
