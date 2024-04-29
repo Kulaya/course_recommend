@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 # Load the dataset
 @st.cache
 def load_data():
-    return pd.read_csv(course_recommendation_data.csv")
+    return pd.read_csv("course_recommendation_data.csv")
 
 dataset = load_data()
 
