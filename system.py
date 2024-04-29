@@ -13,7 +13,7 @@ def load_data():
 # Preprocess the dataset
 def preprocess_data(dataset):
     X = dataset.drop('course', axis=1)
-    y = dataset['Course']
+    y = dataset['course']
 
     # Convert grades to numerical values using label encoding
     label_encoder = LabelEncoder()
@@ -46,15 +46,24 @@ def main():
     # Ask the user to enter their grades
     st.write("Please enter your grades for the following subjects (A, B, C, D or F):")
     grades = {}
+    f_count = 0
     for column in dataset.columns[:-1]:
-        grade = st.selectbox(f"What is your grade in {column}?", ['A', 'B', 'C', 'D','F'])
+        grade = st.selectbox(f"What is your grade in {column}?", ['A', 'B', 'C', 'D', 'F'])
+        if grade == 'F':
+            f_count += 1
         grades[column] = label_encoder.transform([grade])[0]
 
-    # Predict the field of interest
-    user_data = pd.DataFrame([grades])
-    predicted_field = knn.predict(user_data)
-    st.write("\nBased on your grades, the predicted field of interest is:", predicted_field[0])
+    # Ask the user to select field of interest
+    field_of_interest = st.selectbox("Select your field of interest:", 
+                                     ['Domestic and Industrial Electricity', 'Computer', 'Electronics', 'Networks', 'Solar Electricity'])
+
+    # Predict the field of interest if the user doesn't have 4 or more 'F' grades
+    if f_count < 4:
+        user_data = pd.DataFrame([grades])
+        predicted_field = knn.predict(user_data)
+        st.write("\nBased on your grades, the predicted field of interest is:", predicted_field[0])
+    else:
+        st.write("\nSorry, based on your grades, we cannot provide a recommendation.")
 
 if __name__ == "__main__":
     main()
-
