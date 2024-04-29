@@ -1,12 +1,12 @@
+import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
-import streamlit as st
 
 # Load the dataset
 @st.cache
 def load_data():
-    return pd.read_csv("course_recommendation_data.csv")
+    return pd.read_csv(course_recommendation_data.csv")
 
 dataset = load_data()
 
@@ -25,38 +25,25 @@ knn = KNeighborsClassifier(n_neighbors=5)
 # Train the KNN model
 knn.fit(X, y)
 
-# Function to convert alphabet letter to corresponding index
-def letter_to_index(letter):
-    return ord(letter.upper()) - ord('A')
-
-# Function to convert index to corresponding alphabet letter
-def index_to_letter(index):
-    return chr(index + ord('A'))
-
-# Main Streamlit app
-def main():
-    st.title("Course Recommendation System")
-
-    st.write("Welcome to the Course Recommendation System!")
-    st.write("Please enter your grades for the following subjects (A, B, C, D, or F):")
-
+# Define function to get user input
+def get_user_input():
     grades = {}
     for column in X.columns:
-        grade = st.text_input(f"What is your grade in {column}?", "")
-        if grade.upper() in ["A", "B", "C", "D", "F"]:
-            grades[column] = label_encoder.transform([grade.upper()])[0]
-        else:
-            st.warning("Invalid grade. Please enter A, B, C, D, or F.")
+        while True:
+            grade = st.selectbox(f"What is your grade in {column}?", options=["A", "B", "C", "D", "F"])
+            grades[column] = label_encoder.transform([grade])[0]
+            break
+    field_of_interest = st.selectbox("What is your field of interest?", options=dataset['Field of Interest'].unique())
+    return grades, field_of_interest
 
-    st.write("Please select your field of interest:")
-    field_options = dataset['Field of Interest'].unique()
-    choice = st.selectbox("Select your field of interest", field_options)
-
-    # Predict the course based on grades and field of interest
+# Predict the field of interest
+def predict_field(grades):
     user_data = pd.DataFrame([grades])
-    predicted_course = knn.predict(user_data)
+    predicted_field = knn.predict(user_data)
+    return predicted_field[0]
 
-    # Map predicted course to recommended course
+# Define function to get recommended course
+def get_recommended_course(predicted_field):
     recommended_courses = {
         "Domestic and Industrial Electricity": "Electrical and Industrial Automation Engineering",
         "Computer": "Electrical and Computer Engineering",
@@ -65,9 +52,24 @@ def main():
         "Solar Electricity": "Electrical and Renewable Energy",
         "Unknown": "Unknown"
     }
+    return recommended_courses.get(predicted_field, "Unknown")
 
-    recommended_course = recommended_courses.get(choice, "Unknown")
+# Streamlit UI
+def main():
+    st.title("Course Recommendation System")
 
+    st.write("Welcome to the Course Recommendation System!")
+    st.write("Please enter your grades and field of interest to get a course recommendation.")
+
+    grades, field_of_interest = get_user_input()
+
+    st.write("Predicting the field of interest based on your grades...")
+    predicted_field = predict_field(grades)
+    st.write("Predicted field of interest:", predicted_field)
+
+    st.write("Determining the recommended course...")
+    recommended_course = get_recommended_course(predicted_field)
+    
     if recommended_course != "Unknown":
         st.success(f"Based on your grades and field of interest, the recommended course is: {recommended_course}")
     else:
