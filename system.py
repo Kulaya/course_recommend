@@ -1,69 +1,77 @@
-import streamlit as st
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
+import streamlit as st
 
 # Load the dataset
 @st.cache
 def load_data():
-    dataset = pd.read_csv("course_recommendation_data.csv")
-    return dataset
+    return pd.read_csv("course_recommendation_data.csv")
 
-# Preprocess the dataset
-def preprocess_data(dataset):
-    X = dataset.drop('course', axis=1)
-    y = dataset['course']
+dataset = load_data()
 
-    # Convert grades to numerical values using label encoding
-    label_encoder = LabelEncoder()
-    for column in X.columns:
-        X[column] = label_encoder.fit_transform(X[column])
+# Split features (grades) and target (field of interest)
+X = dataset.drop(['Field of Interest', 'Course'], axis=1)
+y = dataset['Field of Interest']
 
-    # Split the dataset into training and testing sets (80% train, 20% test)
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    return X_train, y_train, label_encoder
+# Convert grades to numerical values using label encoding
+label_encoder = LabelEncoder()
+for column in X.columns:
+    X[column] = label_encoder.fit_transform(X[column])
+
+# Initialize the KNN model
+knn = KNeighborsClassifier(n_neighbors=5)
 
 # Train the KNN model
-def train_model(X_train, y_train, n_neighbors=5):
-    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-    knn.fit(X_train, y_train)
-    return knn
+knn.fit(X, y)
 
+# Function to convert alphabet letter to corresponding index
+def letter_to_index(letter):
+    return ord(letter.upper()) - ord('A')
+
+# Function to convert index to corresponding alphabet letter
+def index_to_letter(index):
+    return chr(index + ord('A'))
+
+# Main Streamlit app
 def main():
     st.title("Course Recommendation System")
 
-    # Load the dataset
-    dataset = load_data()
+    st.write("Welcome to the Course Recommendation System!")
+    st.write("Please enter your grades for the following subjects (A, B, C, D, or F):")
 
-    # Preprocess the data
-    X_train, y_train, label_encoder = preprocess_data(dataset)
-
-    # Train the model
-    knn = train_model(X_train, y_train)
-
-    # Ask the user to enter their grades
-    st.write("Please enter your grades for the following subjects (A, B, C, D or F):")
     grades = {}
-    f_count = 0
-    for column in dataset.columns[:-1]:
-        grade = st.selectbox(f"What is your grade in {column}?", ['A', 'B', 'C', 'D', 'F'])
-        if grade == 'F':
-            f_count += 1
-        grades[column] = label_encoder.transform([grade])[0]
+    for column in X.columns:
+        grade = st.text_input(f"What is your grade in {column}?", "")
+        if grade.upper() in ["A", "B", "C", "D", "F"]:
+            grades[column] = label_encoder.transform([grade.upper()])[0]
+        else:
+            st.warning("Invalid grade. Please enter A, B, C, D, or F.")
 
-    # Ask the user to select field of interest
-    field_of_interest = st.selectbox("Select your field of interest:", 
-                                     ['Domestic and Industrial Electricity', 'Computer', 'Electronics', 'Networks', 'Solar Electricity'])
+    st.write("Please select your field of interest:")
+    field_options = dataset['Field of Interest'].unique()
+    choice = st.selectbox("Select your field of interest", field_options)
 
-    # Predict the field of interest if the user doesn't have 4 or more 'F' grades
-    if f_count < 4:
-        user_data = pd.DataFrame([grades])
-        predicted_field = knn.predict(user_data)
-        st.write("\nBased on your grades, the predicted field of interest is:", predicted_field[0])
+    # Predict the course based on grades and field of interest
+    user_data = pd.DataFrame([grades])
+    predicted_course = knn.predict(user_data)
+
+    # Map predicted course to recommended course
+    recommended_courses = {
+        "Domestic and Industrial Electricity": "Electrical and Industrial Automation Engineering",
+        "Computer": "Electrical and Computer Engineering",
+        "Electronics": "Electronics and Telecommunication Engineering",
+        "Networks": "Electrical and Computer Engineering",
+        "Solar Electricity": "Electrical and Renewable Energy",
+        "Unknown": "Unknown"
+    }
+
+    recommended_course = recommended_courses.get(choice, "Unknown")
+
+    if recommended_course != "Unknown":
+        st.success(f"Based on your grades and field of interest, the recommended course is: {recommended_course}")
     else:
-        st.write("\nSorry, based on your grades, we cannot provide a recommendation.")
+        st.warning("Based on your grades and field of interest, the recommended course is unknown.")
 
 if __name__ == "__main__":
     main()
