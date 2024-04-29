@@ -43,16 +43,27 @@ def predict_field(grades):
     return predicted_field[0]
 
 # Define function to get recommended course
-def get_recommended_course(predicted_field):
+def get_recommended_course(grades, field_of_interest):
+    num_f_grades = sum(1 for grade in grades.values() if grade == label_encoder.transform(["F"])[0])
+    
     recommended_courses = {
-        "Domestic and Industrial Electricity": "Electrical and Industrial Automation Engineering",
-        "Computer": "Electrical and Computer Engineering",
-        "Electronics": "Electronics and Telecommunication Engineering",
-        "Networks": "Electrical and Computer Engineering",
-        "Solar Electricity": "Electrical and Renewable Energy",
-        "Unknown": "Unknown"
+        ("Domestic and Industrial Electricity", "Electrical and Industrial Automation Engineering"),
+        ("Computer", "Electrical and Computer Engineering"),
+        ("Electronics", "Electronics and Telecommunication Engineering"),
+        ("Networks", "Electrical and Computer Engineering"),
+        ("Solar Electricity", "Electrical and Renewable Energy")
     }
-    return recommended_courses.get(predicted_field, "Unknown")
+
+    if num_f_grades >= 4:
+        for field, course in recommended_courses:
+            if field == field_of_interest:
+                return course
+
+    for field, course in recommended_courses:
+        if field == field_of_interest:
+            return course
+    
+    return "Unknown"
 
 # Streamlit UI
 def main():
@@ -64,7 +75,7 @@ def main():
     grades, field_of_interest = get_user_input()
 
     st.write("Determining the recommended course...")
-    recommended_course = get_recommended_course(field_of_interest)
+    recommended_course = get_recommended_course(grades, field_of_interest)
     
     if recommended_course != "Unknown":
         st.success(f"Based on your grades and field of interest, the recommended course is: {recommended_course}")
